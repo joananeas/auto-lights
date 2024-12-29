@@ -48,26 +48,33 @@ void switcher (int action) {
   motorSwitch.write(pointZero); // Return to start point after toggling ON/OFF.
 }
 
-// the loop function runs over and over again forever
+unsigned long lastToggleTime = 0; // To track the last time the switch was toggled
+const int debounceDelay = 1000; // 1 second debounce time
+
 void loop() {
   digitalWrite(trigPin, LOW);  
-	delayMicroseconds(2);  
-	digitalWrite(trigPin, HIGH);  
-	delayMicroseconds(10);  
-	digitalWrite(trigPin, LOW);  
+  delayMicroseconds(2);  
+  digitalWrite(trigPin, HIGH);  
+  delayMicroseconds(10);  
+  digitalWrite(trigPin, LOW);  
   
   duration = pulseIn(echoPin, HIGH);
-  distance = (duration*.0343)/2;
+  distance = (duration * 0.0343) / 2;
   Serial.print("Distance: ");
   Serial.println(distance);
 
-  if (distance < 20) { // If we pass the hand right above the sensor
-    if (pastStateMotor == true) { // If the past action was ON
+  unsigned long currentTime = millis();
+
+  if (distance < 20 && (currentTime - lastToggleTime > debounceDelay)) {
+    // Only toggle if enough time has passed since the last toggle
+    if (pastStateMotor) { // If the past action was ON
       switcher(0); // Turn the lights off
       pastStateMotor = false; // Set the flag to false
-    } else if (pastStateMotor == false) { // If the past action was OFF
+    } else { // If the past action was OFF
       switcher(1); // Turn the lights on
       pastStateMotor = true; // Set the flag to true
     }
+    lastToggleTime = currentTime; // Update the last toggle time
   }
 }
+
